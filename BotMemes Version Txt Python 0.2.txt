@@ -1,0 +1,56 @@
+import discord
+from discord.ext import commands, tasks
+import praw
+import random
+from urllib.parse import urlparse
+
+TOKEN = '(TOKEN DE DISCORD)'
+REDDIT_CLIENT_ID = ''
+REDDIT_CLIENT_SECRET = ''
+REDDIT_USER_AGENT = '(USER REDDIT)'
+SUBREDDIT_NAME = 'dankgentina'  # Cambia al nombre del subreddit que prefieras
+
+# Crear un objeto Intents
+intents = discord.Intents.default()
+intents.all()
+
+# Crear el objeto Bot con las intenciones
+bot = commands.Bot(command_prefix='!', intents=intents)
+
+# Configurar la instancia de PRAW (Python Reddit API Wrapper)
+reddit = praw.Reddit(
+    client_id='',
+    client_secret='',
+    user_agent='(USER',
+)
+
+@bot.event
+async def on_ready():
+    print(f'Bot conectado como {bot.user.name}')
+    send_meme.start()
+
+@tasks.loop(minutes=5)
+async def send_meme():
+    subreddit = reddit.subreddit(SUBREDDIT_NAME)
+    memes = list(subreddit.hot(limit=20))  # Obtener los 50 primeros memes populares
+
+    if memes:
+        chosen_meme = random.choice(memes)
+        meme_url = chosen_meme.url
+
+        # Verificar si la URL termina con una extensión de imagen
+        valid_extensions = ['.jpg', '.jpeg', '.png', '.gif']
+        parsed_url = urlparse(meme_url)
+        file_extension = parsed_url.path[-4:].lower()
+
+        if file_extension in valid_extensions:
+            # Enviar el meme al canal de Discord solo si es una imagen
+            channel_id = 878118694725746729 # ID del canal de Discord
+            channel = bot.get_channel(channel_id)
+
+            if channel:
+                await channel.send(meme_url)
+
+# Ejecutar el bot con el token
+bot.run('TOKEN')
+
